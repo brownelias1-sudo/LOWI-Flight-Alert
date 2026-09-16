@@ -25,7 +25,14 @@ app.get("/aircraft", async (_req, res) => {
     const response = await fetch(url);
 
     if (!response.ok) {
-      throw new Error(`OpenSky Fehler: ${response.status}`);
+      const errorText = await response.text();
+
+      return res.status(502).json({
+        status: "error",
+        source: "OpenSky",
+        openSkyStatus: response.status,
+        openSkyMessage: errorText || "Keine Fehlermeldung von OpenSky"
+      });
     }
 
     const data = await response.json();
@@ -40,7 +47,8 @@ app.get("/aircraft", async (_req, res) => {
       velocity: a[9],
       heading: a[10],
       verticalRate: a[11],
-      onGround: a[8]
+      onGround: a[8],
+      category: a[17]
     }));
 
     res.json({
@@ -51,12 +59,14 @@ app.get("/aircraft", async (_req, res) => {
       },
       aircraft
     });
+
   } catch (error) {
     console.error(error);
 
     res.status(500).json({
       status: "error",
-      message: "OpenSky-Daten konnten nicht abgerufen werden."
+      message: "OpenSky-Daten konnten nicht abgerufen werden.",
+      details: error.message
     });
   }
 });
